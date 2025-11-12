@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MY SMART HOME</title>
+
+<!-- Fonte Roboto Condensed -->
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --gold:#F5C515;
+  --accent:#0B737D;
+  --green:#3FCB4C;
+  --bg:#F8FAFC;
+  --radius:18px;
+  --shadow:0 8px 24px rgba(0,0,0,0.08);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Roboto Condensed',sans-serif;
+  background:var(--bg);
+  color:#222;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+  padding:20px;
+}
+
+/* ---------- HEADER ---------- */
+header{
+  width:100%;
+  text-align:center;
+  margin:40px 0;
+}
+header h1{
+  font-family:'Roboto Condensed',sans-serif;
+  font-weight:700;
+  font-size:3rem;
+  color:var(--gold);
+  letter-spacing:1px;
+}
+
+/* ---------- LOGIN ---------- */
+#loginArea{
+  background:white;
+  padding:30px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  width:100%;
+  max-width:380px;
+  text-align:center;
+  position:relative;
+}
+#loginArea input{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  margin-bottom:14px;
+  font-size:1rem;
+}
+#loginBtn{
+  width:100%;
+  background:var(--accent);
+  color:white;
+  border:none;
+  border-radius:10px;
+  padding:12px;
+  cursor:pointer;
+  font-weight:700;
+  font-size:1rem;
+  transition:.2s;
+}
+#loginBtn:hover{opacity:.85;}
+
+/* Indicador de carregamento */
+#loading{
+  display:none;
+  margin-top:10px;
+  font-size:.95rem;
+  color:#333;
+}
+.spinner{
+  border:3px solid #ccc;
+  border-top:3px solid var(--accent);
+  border-radius:50%;
+  width:22px;
+  height:22px;
+  animation:spin 0.9s linear infinite;
+  display:inline-block;
+  vertical-align:middle;
+  margin-right:6px;
+}
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+/* ---------- DASHBOARD ---------- */
+#mainArea{
+  display:none;
+  width:100%;
+  max-width:1100px;
+  flex-direction:column;
+}
+.top-buttons{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:25px;
+  gap:20px;
+}
+.top-buttons .btn{
+  flex:1.5;
+  padding:15px;
+  font-size:1.1rem;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:20px;
+}
+.card{
+  background:white;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:20px;
+  text-align:center;
+  transition:.2s;
+}
+.card:hover{transform:translateY(-3px);}
+.card h3{color:var(--gold);margin-bottom:8px;}
+.state{font-weight:600;margin-bottom:6px;}
+.device-icon{
+  width:70px;height:70px;margin:8px auto;
+}
+.btn{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:var(--accent);
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
+}
+.btn:hover{transform:translateY(-2px);}
+.btn.active{background:var(--green);color:#fff;}
+
+/* ---------- FAN ---------- */
+@keyframes spinFan{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+.fan-spinning{animation:spinFan 1s linear infinite;}
+
+/* ---------- CURTAIN ---------- */
+.curtain-controls{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin-top:10px;
+}
+.curtain-controls button{flex:1;}
+.range{
+  -webkit-appearance:none;
+  width:100%;
+  height:12px;
+  border-radius:6px;
+  background:var(--accent);
+  outline:none;
+  margin-top:10px;
+  position:relative;
+}
+.range::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:var(--gold);
+  cursor:pointer;
+  border:2px solid #aaa;
+  position:relative;
+  z-index:2;
+}
+.range::-moz-range-thumb{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:var(--gold);
+  cursor:pointer;
+  border:2px solid #aaa;
+}
+
+/* ---------- LOGOUT ---------- */
+#logoutBtn{
+  width:220px;
+  margin:30px auto 0 auto;
+  display:block;
+  background:red;
+  color:white;
+  border:none;
+  padding:12px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
+}
+#logoutBtn:hover{opacity:.85;}
+
+footer{margin-top:30px;color:#777;font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<header><h1>MY HOME CONTROL</h1></header>
+
+<!-- LOGIN AREA -->
+<section id="loginArea">
+  <h2 style="margin-bottom:16px;">🔐 Acesso ao Sistema</h2>
+  <input type="email" id="email" placeholder="E-mail" required />
+  <input type="password" id="password" placeholder="Senha" required />
+  <button id="loginBtn">Entrar</button>
+  <div id="loading"><span class="spinner"></span> Entrando...</div>
+  <p style="margin-top:12px;font-size:.9rem;color:#555;">Use seu login do Firebase.</p>
+</section>
+
+<!-- DASHBOARD -->
+<main id="mainArea">
+  <div class="top-buttons">
+    <button id="allOnBtn" class="btn">Todas ON</button>
+    <button id="allOffBtn" class="btn">Todas OFF</button>
+  </div>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Luz 1</h3>
+      <img id="imgL1" class="device-icon" src="https://img.icons8.com/fluency/96/light-off.png"/>
+      <div class="state" id="stateL1">Desligada</div>
+      <button id="btnL1" class="btn">Ligar</button>
+    </div>
+    <div class="card">
+      <h3>Luz 2</h3>
+      <img id="imgL2" class="device-icon" src="https://img.icons8.com/fluency/96/light-off.png"/>
+      <div class="state" id="stateL2">Desligada</div>
+      <button id="btnL2" class="btn">Ligar</button>
+    </div>
+    <div class="card">
+      <h3>Luz 3</h3>
+      <img id="imgL3" class="device-icon" src="https://img.icons8.com/fluency/96/light-off.png"/>
+      <div class="state" id="stateL3">Desligada</div>
+      <button id="btnL3" class="btn">Ligar</button>
+    </div>
+
+    <div class="card">
+      <h3>Ventilador</h3>
+      <img id="fanIcon" class="device-icon" src="https://img.icons8.com/fluency/96/fan.png"/>
+      <div class="state">Velocidade: <span id="stateFan">0</span></div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">
+        <button class="btn" id="fan0">OFF</button>
+        <button class="btn" id="fan1">1</button>
+        <button class="btn" id="fan2">2</button>
+        <button class="btn" id="fan3">3</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Cortina</h3>
+      <img class="device-icon" src="https://cdn-icons-png.flaticon.com/512/9629/9629492.png"/>
+      <div class="curtain-controls">
+        <button id="btnAbrir" class="btn">Abrir</button>
+        <button id="btnParar" class="btn">Parar</button>
+        <button id="btnFechar" class="btn">Fechar</button>
+      </div>
+      <input id="sliderCortina" type="range" class="range" min="0" max="110000" step="100" />
+    </div>
+  </section>
+
+  <button id="logoutBtn">Sair</button>
+</main>
+
+<footer>© 2025 MY SMART HOME</footer>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDcjgnAEdxcMDLzyQoZ2VUDhxdCqALZAl0",
+  authDomain: "my-home-conectada.firebaseapp.com",
+  databaseURL: "https://my-home-conectada-default-rtdb.europe-west1.firebasedatabase.app/",
+  projectId: "my-home-conectada",
+  storageBucket: "my-home-conectada.appspot.com",
+  messagingSenderId: "282461885085",
+  appId: "1:282461885085:web:56245e32040872f70a7a74"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+const loginArea = document.getElementById('loginArea');
+const mainArea = document.getElementById('mainArea');
+const loading = document.getElementById('loading');
+const loginBtn = document.getElementById('loginBtn');
+
+// Login
+loginBtn.onclick = () => {
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value.trim();
+  if(!email || !pass) return alert('Preencha e-mail e senha');
+
+  // Mostra indicador
+  loading.style.display = 'block';
+  loginBtn.disabled = true;
+  loginBtn.style.opacity = 0.6;
+
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => {
+      loginArea.style.display='none';
+      mainArea.style.display='flex';
+    })
+    .catch(e => alert('Erro: ' + e.message))
+    .finally(()=>{
+      loading.style.display='none';
+      loginBtn.disabled = false;
+      loginBtn.style.opacity = 1;
+    });
+};
+
+// Logout
+document.getElementById('logoutBtn').onclick = () => {
+  auth.signOut().then(() => {
+    mainArea.style.display='none';
+    loginArea.style.display='block';
+  });
+};
+
+// Referências Firebase
+const refL1=db.ref('Casa/LUZ1');
+const refL2=db.ref('Casa/LUZ2');
+const refL3=db.ref('Casa/LUZ3');
+const refFan=db.ref('Casa/Ventilador');
+const refCortina=db.ref('Casa/Cortina');
+const refCmd=db.ref('Casa/Comandos');
+function sendCmd(cmd){refCmd.set(cmd);}
+
+function setLamp(id,on){
+  const img=document.getElementById('img'+id);
+  const state=document.getElementById('state'+id);
+  const btn=document.getElementById('btn'+id);
+  img.src=on?"https://img.icons8.com/fluency/96/light-on.png":"https://img.icons8.com/fluency/96/light-off.png";
+  state.textContent=on?"Ligada":"Desligada";
+  btn.textContent=on?"Desligar":"Ligar";
+  btn.classList.toggle('active',on);
+}
+
+btnL1.onclick=()=>sendCmd('L1');
+btnL2.onclick=()=>sendCmd('L2');
+btnL3.onclick=()=>sendCmd('L3');
+fan0.onclick=()=>sendCmd('F0');
+fan1.onclick=()=>sendCmd('F1');
+fan2.onclick=()=>sendCmd('F2');
+fan3.onclick=()=>sendCmd('F3');
+btnAbrir.onclick=()=>sendCmd('AB');
+btnParar.onclick=()=>sendCmd('ST');
+btnFechar.onclick=()=>sendCmd('FC');
+
+const sliderCortina=document.getElementById('sliderCortina');
+sliderCortina.addEventListener('input',()=>{
+  let val=Math.round(sliderCortina.value/100)*100;
+  let perc=(val/sliderCortina.max)*100;
+  sliderCortina.style.background=`linear-gradient(to right, #ddd ${perc}%, var(--accent) ${perc}%)`;
+  sendCmd('C'+val);
+});
+
+refL1.on('value',s=>setLamp('L1',s.val()));
+refL2.on('value',s=>setLamp('L2',s.val()));
+refL3.on('value',s=>setLamp('L3',s.val()));
+
+refFan.on('value',s=>{
+  const val=s.val()||0;
+  document.getElementById('stateFan').textContent=val;
+  [fan0,fan1,fan2,fan3].forEach((b,i)=>b.classList.toggle('active',i===val));
+});
+
+refCortina.on('value',s=>{
+  const pos=s.val()||0;
+  sliderCortina.value=pos;
+  let perc=(pos/sliderCortina.max)*100;
+  sliderCortina.style.background=`linear-gradient(to right, #ddd ${perc}%, var(--accent) ${perc}%)`;
+});
+
+allOnBtn.onclick=()=>sendCmd('L11');
+allOffBtn.onclick=()=>sendCmd('L0');
+
+function updateAllBtn(){
+  const l1=btnL1.classList.contains('active');
+  const l2=btnL2.classList.contains('active');
+  const l3=btnL3.classList.contains('active');
+  allOnBtn.classList.toggle('active',l1&&l2&&l3);
+  allOffBtn.classList.toggle('active',!l1&&!l2&&!l3);
+}
+refL1.on('value',updateAllBtn);
+refL2.on('value',updateAllBtn);
+refL3.on('value',updateAllBtn);
+</script>
+</body>
+</html>
