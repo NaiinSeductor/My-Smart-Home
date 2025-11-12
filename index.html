@@ -17,7 +17,6 @@
   --radius:18px;
   --shadow:0 8px 24px rgba(0,0,0,0.08);
 }
-
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
   font-family:'Roboto Condensed',sans-serif;
@@ -29,7 +28,6 @@ body{
   min-height:100vh;
   padding:20px;
 }
-
 /* ---------- HEADER ---------- */
 header{
   width:100%;
@@ -43,7 +41,6 @@ header h1{
   color:var(--gold);
   letter-spacing:1px;
 }
-
 /* ---------- LOGIN ---------- */
 #loginArea{
   background:white;
@@ -76,8 +73,6 @@ header h1{
   transition:.2s;
 }
 #loginBtn:hover{opacity:.85;}
-
-/* Indicador de carregamento */
 #loading{
   display:none;
   margin-top:10px;
@@ -99,7 +94,6 @@ header h1{
   from{transform:rotate(0deg);}
   to{transform:rotate(360deg);}
 }
-
 /* ---------- DASHBOARD ---------- */
 #mainArea{
   display:none;
@@ -150,15 +144,11 @@ header h1{
 }
 .btn:hover{transform:translateY(-2px);}
 .btn.active{background:var(--green);color:#fff;}
-
-/* ---------- FAN ---------- */
 @keyframes spinFan{
   from{transform:rotate(0deg);}
   to{transform:rotate(360deg);}
 }
 .fan-spinning{animation:spinFan 1s linear infinite;}
-
-/* ---------- CURTAIN ---------- */
 .curtain-controls{
   display:flex;
   justify-content:center;
@@ -174,7 +164,6 @@ header h1{
   background:var(--accent);
   outline:none;
   margin-top:10px;
-  position:relative;
 }
 .range::-webkit-slider-thumb{
   -webkit-appearance:none;
@@ -184,19 +173,7 @@ header h1{
   background:var(--gold);
   cursor:pointer;
   border:2px solid #aaa;
-  position:relative;
-  z-index:2;
 }
-.range::-moz-range-thumb{
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  background:var(--gold);
-  cursor:pointer;
-  border:2px solid #aaa;
-}
-
-/* ---------- LOGOUT ---------- */
 #logoutBtn{
   width:220px;
   margin:30px auto 0 auto;
@@ -211,13 +188,12 @@ header h1{
   transition:.2s;
 }
 #logoutBtn:hover{opacity:.85;}
-
 footer{margin-top:30px;color:#777;font-size:.9rem;}
 </style>
 </head>
 <body>
 
-<header><h1>MY HOME CONTROL</h1></header>
+<header><h1>SMART HOME CONTROL</h1></header>
 
 <!-- LOGIN AREA -->
 <section id="loginArea">
@@ -226,7 +202,7 @@ footer{margin-top:30px;color:#777;font-size:.9rem;}
   <input type="password" id="password" placeholder="Senha" required />
   <button id="loginBtn">Entrar</button>
   <div id="loading"><span class="spinner"></span> Entrando...</div>
-  <p style="margin-top:12px;font-size:.9rem;color:#555;">Use seu login do Firebase.</p>
+  <p style="margin-top:12px;font-size:.9rem;color:#555;">Use credenciais fornecidos pelo Admin.</p>
 </section>
 
 <!-- DASHBOARD -->
@@ -255,7 +231,6 @@ footer{margin-top:30px;color:#777;font-size:.9rem;}
       <div class="state" id="stateL3">Desligada</div>
       <button id="btnL3" class="btn">Ligar</button>
     </div>
-
     <div class="card">
       <h3>Ventilador</h3>
       <img id="fanIcon" class="device-icon" src="https://img.icons8.com/fluency/96/fan.png"/>
@@ -267,7 +242,6 @@ footer{margin-top:30px;color:#777;font-size:.9rem;}
         <button class="btn" id="fan3">3</button>
       </div>
     </div>
-
     <div class="card">
       <h3>Cortina</h3>
       <img class="device-icon" src="https://cdn-icons-png.flaticon.com/512/9629/9629492.png"/>
@@ -304,44 +278,47 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
+// Elementos
 const loginArea = document.getElementById('loginArea');
 const mainArea = document.getElementById('mainArea');
 const loading = document.getElementById('loading');
 const loginBtn = document.getElementById('loginBtn');
+
+// --- OBSERVADOR DE AUTENTICAÇÃO PERSISTENTE ---
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    loginArea.style.display = 'none';
+    mainArea.style.display = 'flex';
+    carregarEstados(); // Carrega estados logo que o usuário é reconhecido
+  } else {
+    mainArea.style.display = 'none';
+    loginArea.style.display = 'block';
+  }
+});
 
 // Login
 loginBtn.onclick = () => {
   const email = document.getElementById('email').value.trim();
   const pass = document.getElementById('password').value.trim();
   if(!email || !pass) return alert('Preencha e-mail e senha');
-
-  // Mostra indicador
-  loading.style.display = 'block';
-  loginBtn.disabled = true;
-  loginBtn.style.opacity = 0.6;
-
+  loading.style.display='block';
+  loginBtn.disabled=true;
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => {
-      loginArea.style.display='none';
-      mainArea.style.display='flex';
-    })
-    .catch(e => alert('Erro: ' + e.message))
-    .finally(()=>{
-      loading.style.display='none';
-      loginBtn.disabled = false;
-      loginBtn.style.opacity = 1;
-    });
+  .catch(e => alert('Erro: '+e.message))
+  .finally(()=>{
+    loading.style.display='none';
+    loginBtn.disabled=false;
+  });
 };
 
 // Logout
 document.getElementById('logoutBtn').onclick = () => {
-  auth.signOut().then(() => {
-    mainArea.style.display='none';
-    loginArea.style.display='block';
-  });
+  auth.signOut();
 };
 
-// Referências Firebase
+// Firebase refs
 const refL1=db.ref('Casa/LUZ1');
 const refL2=db.ref('Casa/LUZ2');
 const refL3=db.ref('Casa/LUZ3');
@@ -350,6 +327,7 @@ const refCortina=db.ref('Casa/Cortina');
 const refCmd=db.ref('Casa/Comandos');
 function sendCmd(cmd){refCmd.set(cmd);}
 
+// Atualização de estado visual
 function setLamp(id,on){
   const img=document.getElementById('img'+id);
   const state=document.getElementById('state'+id);
@@ -360,6 +338,26 @@ function setLamp(id,on){
   btn.classList.toggle('active',on);
 }
 
+function carregarEstados(){
+  refL1.on('value',s=>setLamp('L1',s.val()));
+  refL2.on('value',s=>setLamp('L2',s.val()));
+  refL3.on('value',s=>setLamp('L3',s.val()));
+
+  refFan.on('value',s=>{
+    const val=s.val()||0;
+    document.getElementById('stateFan').textContent=val;
+    [fan0,fan1,fan2,fan3].forEach((b,i)=>b.classList.toggle('active',i===val));
+  });
+
+  refCortina.on('value',s=>{
+    const pos=s.val()||0;
+    sliderCortina.value=pos;
+    let perc=(pos/sliderCortina.max)*100;
+    sliderCortina.style.background=`linear-gradient(to right, #ddd ${perc}%, var(--accent) ${perc}%)`;
+  });
+}
+
+// Botões
 btnL1.onclick=()=>sendCmd('L1');
 btnL2.onclick=()=>sendCmd('L2');
 btnL3.onclick=()=>sendCmd('L3');
@@ -371,7 +369,6 @@ btnAbrir.onclick=()=>sendCmd('AB');
 btnParar.onclick=()=>sendCmd('ST');
 btnFechar.onclick=()=>sendCmd('FC');
 
-const sliderCortina=document.getElementById('sliderCortina');
 sliderCortina.addEventListener('input',()=>{
   let val=Math.round(sliderCortina.value/100)*100;
   let perc=(val/sliderCortina.max)*100;
@@ -379,36 +376,8 @@ sliderCortina.addEventListener('input',()=>{
   sendCmd('C'+val);
 });
 
-refL1.on('value',s=>setLamp('L1',s.val()));
-refL2.on('value',s=>setLamp('L2',s.val()));
-refL3.on('value',s=>setLamp('L3',s.val()));
-
-refFan.on('value',s=>{
-  const val=s.val()||0;
-  document.getElementById('stateFan').textContent=val;
-  [fan0,fan1,fan2,fan3].forEach((b,i)=>b.classList.toggle('active',i===val));
-});
-
-refCortina.on('value',s=>{
-  const pos=s.val()||0;
-  sliderCortina.value=pos;
-  let perc=(pos/sliderCortina.max)*100;
-  sliderCortina.style.background=`linear-gradient(to right, #ddd ${perc}%, var(--accent) ${perc}%)`;
-});
-
 allOnBtn.onclick=()=>sendCmd('L11');
 allOffBtn.onclick=()=>sendCmd('L0');
-
-function updateAllBtn(){
-  const l1=btnL1.classList.contains('active');
-  const l2=btnL2.classList.contains('active');
-  const l3=btnL3.classList.contains('active');
-  allOnBtn.classList.toggle('active',l1&&l2&&l3);
-  allOffBtn.classList.toggle('active',!l1&&!l2&&!l3);
-}
-refL1.on('value',updateAllBtn);
-refL2.on('value',updateAllBtn);
-refL3.on('value',updateAllBtn);
 </script>
 </body>
 </html>
