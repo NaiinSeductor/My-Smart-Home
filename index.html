@@ -41,6 +41,36 @@ header h1{
   color:var(--gold);
   letter-spacing:1px;
 }
+.subtitle{
+  font-size:1rem;
+  color:var(--accent);
+  margin-top:8px;
+  font-weight:600;
+}
+/* ---------- INDICADOR ESP ---------- */
+#espStatus{
+  position:fixed;
+  top:20px;
+  right:20px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:white;
+  padding:8px 16px;
+  border-radius:20px;
+  box-shadow:var(--shadow);
+  z-index:1000;
+}
+.status-dot{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#e74c3c;
+  transition:background 0.3s;
+}
+.status-dot.online{
+  background:#2ecc71;
+}
 /* ---------- LOGIN ---------- */
 #loginArea{
   background:white;
@@ -189,11 +219,42 @@ header h1{
 }
 #logoutBtn:hover{opacity:.85;}
 footer{margin-top:30px;color:#777;font-size:.9rem;}
+/* ---------- MENSAGEM ERRO ---------- */
+#msgErro{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#e74c3c;
+  color:white;
+  padding:20px 30px;
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.3);
+  display:none;
+  z-index:2000;
+  text-align:center;
+  max-width:300px;
+}
 </style>
 </head>
 <body>
 
-<header><h1>SMART HOME CONTROL</h1></header>
+<!-- INDICADOR ESP SEMPRE VISÍVEL -->
+<div id="espStatus">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">ESP Offline</span>
+</div>
+
+<!-- MENSAGEM DE ERRO -->
+<div id="msgErro">
+  ❌ ESP não está conectado à internet!<br>
+  <small>Verifique a conexão do dispositivo.</small>
+</div>
+
+<header>
+  <h1>SMART HOME CONTROL</h1>
+  <div class="subtitle"> Minha casa na palma da minha mão</div>
+</header>
 
 <!-- LOGIN AREA -->
 <section id="loginArea">
@@ -278,21 +339,79 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
+// CONFIGURAÇÕES
+const ESP_EMAIL = "sedutorlouco98@gmail.com";
+const USER_TIMEOUT = 10 * 60 * 1000; // 10 minutos
+const ESP_TIMEOUT = 30 * 1000; // 30 segundos sem heartbeat = offline
+
 // Elementos
 const loginArea = document.getElementById('loginArea');
 const mainArea = document.getElementById('mainArea');
 const loading = document.getElementById('loading');
 const loginBtn = document.getElementById('loginBtn');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const msgErro = document.getElementById('msgErro');
+
+// Variáveis de sessão
+let userActivityTimer = null;
+let currentUserEmail = null;
+let isESP = false;
+
+// --- FUNÇÕES DE SESSÃO ---
+function startUserSession(user) {
+  currentUserEmail = user.email;
+  isESP = (user.email === ESP_EMAIL);
+  
+  // ESP nunca faz logout automático
+  if (!isESP) {
+    resetUserTimer();
+    document.addEventListener('click', resetUserTimer);
+    document.addEventListener('keydown', resetUserTimer);
+    document.addEventListener('touchstart', resetUserTimer);
+  }
+}
+
+function resetUserTimer() {
+  if (isESP) return;
+  clearTimeout(userActivityTimer);
+  userActivityTimer = setTimeout(() => {
+    alert('Sessão expirada por inatividade (10 minutos)');
+    auth.signOut();
+  }, USER_TIMEOUT);
+}
+
+function stopUserSession() {
+  clearTimeout(userActivityTimer);
+  document.removeEventListener('click', resetUserTimer);
+  document.removeEventListener('keydown', resetUserTimer);
+  document.removeEventListener('touchstart', resetUserTimer);
+}
+
+// Verificar sessão duplicada
+function checkDuplicateSession(email) {
+  db.ref('Sessions/' + btoa(email)).set({
+    timestamp: Date.now(),
+    online: true
+  });
+}
 
 // --- OBSERVADOR DE AUTENTICAÇÃO PERSISTENTE ---
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user => {
   if (user) {
+    // Verifica se é sessão duplicada (exceto ESP)
+    if (user.email !== ESP_EMAIL) {
+      checkDuplicateSession(user.email);
+    }
+    
+    startUserSession(user);
     loginArea.style.display = 'none';
     mainArea.style.display = 'flex';
-    carregarEstados(); // Carrega estados logo que o usuário é reconhecido
+    carregarEstados();
   } else {
+    stopUserSession();
     mainArea.style.display = 'none';
     loginArea.style.display = 'block';
   }
@@ -315,8 +434,70 @@ loginBtn.onclick = () => {
 
 // Logout
 document.getElementById('logoutBtn').onclick = () => {
+  stopUserSession();
   auth.signOut();
 };
+
+// --- MONITORAMENTO ESP ---
+function monitorESPStatus() {
+  const espRef = db.ref('ESP_Heartbeat');
+  
+  // Atualiza visual
+  function updateStatus(isOnline) {
+    if (isOnline) {
+      statusDot.classList.add('online');
+      statusText.textContent = 'ESP Online';
+    } else {
+      statusDot.classList.remove('online');
+      statusText.textContent = 'ESP Offline';
+    }
+  }
+  
+  // Verifica heartbeat do ESP
+  espRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.timestamp) {
+      const lastSeen = data.timestamp;
+      const now = Date.now();
+      const diff = now - lastSeen;
+      updateStatus(diff < ESP_TIMEOUT);
+    } else {
+      updateStatus(false);
+    }
+  });
+  
+  // Checagem periódica
+  setInterval(() => {
+    espRef.once('value').then(s => {
+      const data = s.val();
+      if (data && data.timestamp) {
+        updateStatus((Date.now() - data.timestamp) < ESP_TIMEOUT);
+      } else {
+        updateStatus(false);
+      }
+    });
+  }, 10000);
+}
+
+monitorESPStatus();
+
+// --- FUNÇÃO PARA ENVIAR COMANDO  ---
+function sendCmd(cmd) {
+  // Verifica se ESP está online
+  const isOnline = statusDot.classList.contains('online');
+  
+  if (!isOnline) {
+    // Mostra mensagem de erro
+    msgErro.style.display = 'block';
+    setTimeout(() => {
+      msgErro.style.display = 'none';
+    }, 3000);
+    return; // Não envia o comando
+  }
+  
+  // Envia comando normalmente
+  db.ref('Casa/Comandos').set(cmd);
+}
 
 // Firebase refs
 const refL1=db.ref('Casa/LUZ1');
@@ -324,8 +505,6 @@ const refL2=db.ref('Casa/LUZ2');
 const refL3=db.ref('Casa/LUZ3');
 const refFan=db.ref('Casa/Ventilador');
 const refCortina=db.ref('Casa/Cortina');
-const refCmd=db.ref('Casa/Comandos');
-function sendCmd(cmd){refCmd.set(cmd);}
 
 // Atualização de estado visual
 function setLamp(id,on){
@@ -357,7 +536,7 @@ function carregarEstados(){
   });
 }
 
-// Botões
+// Botões -  com verificação
 btnL1.onclick=()=>sendCmd('L1');
 btnL2.onclick=()=>sendCmd('L2');
 btnL3.onclick=()=>sendCmd('L3');
