@@ -533,10 +533,25 @@ function setLamp(id,on){
   btn.classList.toggle('active',on);
 }
 
+function verificarTodas(){
+
+  const l1 = document.getElementById('btnL1').classList.contains('active');
+  const l2 = document.getElementById('btnL2').classList.contains('active');
+  const l3 = document.getElementById('btnL3').classList.contains('active');
+  allOnBtn.classList.toggle('active', l1 && l2 && l3);
+  allOffBtn.classList.toggle('active', !l1 && !l2 && !l3);
+}
+  
 function carregarEstados(){
+  /*
   refL1.on('value',s=>setLamp('L1',s.val()));
   refL2.on('value',s=>setLamp('L2',s.val()));
   refL3.on('value',s=>setLamp('L3',s.val()));
+*/
+refL1.on('value',s=>{ setLamp('L1',s.val()); verificarTodas();});
+refL2.on('value',s=>{ setLamp('L2',s.val()); verificarTodas(); });
+refL3.on('value',s=>{ setLamp('L3',s.val()); verificarTodas();});
+  
 
   refFan.on('value',s=>{
     const val=s.val()||0;
