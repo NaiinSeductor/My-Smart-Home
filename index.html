@@ -342,7 +342,7 @@ const auth = firebase.auth();
 // CONFIGURAÇÕES
 const ESP_EMAIL = "sedutorlouco98@gmail.com";
 const USER_TIMEOUT = 10 * 60 * 1000; // 10 minutos
-const ESP_TIMEOUT = 30 * 1000; // 30 segundos sem heartbeat = offline
+//const ESP_TIMEOUT = 30 * 1000; // 30 segundos sem heartbeat = offline
 
 // Elementos
 const loginArea = document.getElementById('loginArea');
@@ -438,6 +438,21 @@ document.getElementById('logoutBtn').onclick = () => {
   auth.signOut();
 };
 
+//Monitoramento do ESP
+  db.ref('ESP_Online').on('value', (snapshot) => {
+
+  const online = snapshot.val() === true;
+
+  if (online) {
+    statusDot.classList.add('online');
+    statusText.textContent = 'ESP Online';
+  } else {
+    statusDot.classList.remove('online');
+    statusText.textContent = 'ESP Offline';
+  }
+
+});
+  /*
 // --- MONITORAMENTO ESP ---
 function monitorESPStatus() {
   const espRef = db.ref('ESP_Heartbeat');
@@ -480,7 +495,8 @@ function monitorESPStatus() {
 }
 
 monitorESPStatus();
-
+*/
+  
 // --- FUNÇÃO PARA ENVIAR COMANDO  ---
 function sendCmd(cmd) {
   // Verifica se ESP está online
